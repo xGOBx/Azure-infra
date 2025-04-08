@@ -77,4 +77,5 @@ jobs:
       with:
         resourceGroupName: ${{ env.RESOURCE_GROUP }}
         template: ${{ env.JSON_TEMPLATE }}
+        parameters: administratorLoginPassword=${{ secrets.DB_ADMIN_PASSWORD }}
         failOnStdErr: false
