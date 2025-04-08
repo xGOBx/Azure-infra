@@ -44,9 +44,9 @@ jobs:
           echo "LOCATION=${{ github.event.inputs.location }}" >> $GITHUB_ENV
           echo "BICEP_FILE=${{ github.event.inputs.bicepFilePath }}" >> $GITHUB_ENV
         else
-          echo "RESOURCE_GROUP=my-resource-group" >> $GITHUB_ENV
+          echo "RESOURCE_GROUP=AzureDeployTest" >> $GITHUB_ENV
           echo "LOCATION=eastus" >> $GITHUB_ENV
-          echo "BICEP_FILE=./deploy/main.bicep" >> $GITHUB_ENV
+          echo "BICEP_FILE=./deploy/template.bicep" >> $GITHUB_ENV
         fi
     
     - name: Create Resource Group
