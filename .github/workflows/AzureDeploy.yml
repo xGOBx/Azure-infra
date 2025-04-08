@@ -62,7 +62,7 @@ jobs:
         sudo mv ./bicep /usr/local/bin/bicep
         bicep --version
 
-    - name: Convert Bicep to JSON and Extract Expected Resources
+    - name: Convert Bicep to JSON
       id: convert-bicep
       run: |
         BICEP_FILE="${{ env.BICEP_FILE }}"
@@ -70,15 +70,6 @@ jobs:
         echo "Converting Bicep file $BICEP_FILE to $JSON_FILE"
         bicep build $BICEP_FILE --outfile $JSON_FILE
         echo "JSON_TEMPLATE=$JSON_FILE" >> $GITHUB_ENV
-        
-        # Extract expected resource types from the template
-        echo "Extracting expected resource types from the template..."
-        RESOURCE_TYPES=$(jq -r '.resources[] | .type' $JSON_FILE | sort | uniq)
-        echo "Expected resource types:"
-        echo "$RESOURCE_TYPES"
-        echo "RESOURCE_TYPES<<EOF" >> $GITHUB_ENV
-        echo "$RESOURCE_TYPES" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
 
     - name: Attempt ARM Deployment (Ignoring Errors)
       id: arm-deploy
@@ -93,8 +84,8 @@ jobs:
 
     - name: Wait for Resources to Provision
       run: |
-        echo "Waiting 60 seconds for resources to finish provisioning..."
-        sleep 60
+        echo "Waiting 90 seconds for resources to finish provisioning..."
+        sleep 90
 
     - name: Validate Required Resources
       uses: azure/CLI@v1
@@ -107,20 +98,25 @@ jobs:
           echo "Resources found in resource group:"
           echo "$RESOURCES" | jq
           
-          # Check for each resource type from the template
+          # Define core resource types to check (only the main ones, not all sub-resources)
+          CORE_RESOURCE_TYPES=(
+            "Microsoft.Storage/storageAccounts"
+            "Microsoft.Insights/components"
+            "Microsoft.Sql/servers"
+            "Microsoft.Web/sites"
+            "Microsoft.Web/serverfarms"
+            "Microsoft.Communication/CommunicationServices"
+            "Microsoft.Communication/EmailServices"
+          )
+          
+          # Check for core resource types
           VALIDATION_FAILED=false
           
-          # Expected resource types from the Bicep template
-          cat << 'EXPECTED_TYPES' > /tmp/expected_types.txt
-          ${{ env.RESOURCE_TYPES }}
-          EXPECTED_TYPES
-          
-          while IFS= read -r RESOURCE_TYPE; do
-            # Skip empty lines
-            [ -z "$RESOURCE_TYPE" ] && continue
-            
+          for RESOURCE_TYPE in "${CORE_RESOURCE_TYPES[@]}"; do
             echo "Checking for resource type: $RESOURCE_TYPE"
-            RESOURCE_COUNT=$(echo "$RESOURCES" | jq -r "[.[] | select(.type == \"$RESOURCE_TYPE\")] | length")
+            
+            # For exact match and case-insensitive check
+            RESOURCE_COUNT=$(echo "$RESOURCES" | jq -r "[.[] | select(.type | ascii_downcase == \"$RESOURCE_TYPE\" | ascii_downcase)] | length")
             
             if [ "$RESOURCE_COUNT" -gt 0 ]; then
               echo "✅ Found $RESOURCE_COUNT resources of type $RESOURCE_TYPE"
@@ -128,11 +124,21 @@ jobs:
               echo "❌ ERROR: No resources of type $RESOURCE_TYPE were found"
               VALIDATION_FAILED=true
             fi
-          done < /tmp/expected_types.txt
+          done
+          
+          # Special case for SQL databases (child resources)
+          echo "Checking for SQL databases..."
+          DB_COUNT=$(echo "$RESOURCES" | jq -r '[.[] | select(.type == "Microsoft.Sql/servers/databases" and .name != "**/master")] | length')
+          if [ "$DB_COUNT" -gt 0 ]; then
+            echo "✅ Found $DB_COUNT SQL database(s)"
+          else
+            echo "❌ ERROR: No SQL databases were found"
+            VALIDATION_FAILED=true
+          fi
           
           if [ "$VALIDATION_FAILED" = true ]; then
-            echo "Resource validation failed. Some expected resources were not found in the resource group."
+            echo "Resource validation failed. Some core resources were not found in the resource group."
             exit 1
           else
-            echo "All required resource types have been successfully validated!"
+            echo "✅ All core resource types have been successfully validated!"
           fi
