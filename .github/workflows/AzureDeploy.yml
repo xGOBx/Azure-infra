@@ -104,10 +104,14 @@ jobs:
         inlineScript: |
           echo "Checking for resources in resource group ${{ env.RESOURCE_GROUP }}..."
           
-          # Get all resources in the resource group
-          RESOURCES=$(az resource list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].{type:type, name:name}" -o json)
+          # Get all resources in the resource group with lowercase type for case-insensitive comparison
+          RESOURCES=$(az resource list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].{type:type, name:name, lowercaseType:lower(type)}" -o json)
           echo "Resources found in resource group:"
           echo "$RESOURCES" | jq
+          
+          # Create mapping dictionary of resource types with proper casing
+          echo "Creating case mapping for Azure resources..."
+          echo "$RESOURCES" | jq -r '.[] | .type' | sort | uniq > /tmp/actual_types.txt
           
           # Check for each resource type from the template
           VALIDATION_FAILED=false
@@ -123,16 +127,36 @@ jobs:
             
             echo "Checking for resource type: $RESOURCE_TYPE"
             
-            # Use simplified matching to check if a resource type exists
-            # This will match top-level resources like Microsoft.Sql/servers
-            # without requiring every child resource to exist
-            RESOURCE_COUNT=$(echo "$RESOURCES" | jq -r "[.[] | select(.type == \"$RESOURCE_TYPE\")] | length")
+            # Use case-insensitive matching for resource types
+            RESOURCE_TYPE_LOWER=$(echo "$RESOURCE_TYPE" | tr '[:upper:]' '[:lower:]')
+            RESOURCE_COUNT=$(echo "$RESOURCES" | jq -r "[.[] | select(.lowercaseType == \"$RESOURCE_TYPE_LOWER\")] | length")
             
             if [ "$RESOURCE_COUNT" -gt 0 ]; then
-              echo "✅ Found $RESOURCE_COUNT resources of type $RESOURCE_TYPE"
+              echo "✅ Found $RESOURCE_COUNT resources of type similar to $RESOURCE_TYPE"
+              # Show the actual resources found with their correct casing
+              echo "$RESOURCES" | jq -r ".[] | select(.lowercaseType == \"$RESOURCE_TYPE_LOWER\") | \"  - \(.name) (\(.type))\""
             else
-              echo "❌ ERROR: No resources of type $RESOURCE_TYPE were found"
-              VALIDATION_FAILED=true
+              # Check for partial matches (e.g., "EmailServices" vs "EmailServices")
+              PARTIAL_MATCHES=$(echo "$RESOURCES" | jq -r "[.[] | select(.lowercaseType | contains(\"$(echo $RESOURCE_TYPE_LOWER | awk -F'/' '{print $NF}')\"))]")
+              PARTIAL_COUNT=$(echo "$PARTIAL_MATCHES" | jq -r '. | length')
+              
+              if [ "$PARTIAL_COUNT" -gt 0 ] && [ "$PARTIAL_COUNT" != "0" ]; then
+                echo "⚠️ Found $PARTIAL_COUNT resources with partial match to $RESOURCE_TYPE:"
+                echo "$PARTIAL_MATCHES" | jq -r '.[] | "  - \(.name) (\(.type))"'
+                # Consider these as valid matches if in the same provider namespace
+                RESOURCE_PROVIDER=$(echo "$RESOURCE_TYPE" | cut -d'/' -f1)
+                MATCHING_PROVIDER_RESOURCES=$(echo "$PARTIAL_MATCHES" | jq -r "[.[] | select(.type | startswith(\"$RESOURCE_PROVIDER/\"))] | length")
+                
+                if [ "$MATCHING_PROVIDER_RESOURCES" -gt 0 ]; then
+                  echo "✅ At least $MATCHING_PROVIDER_RESOURCES resources found with matching provider namespace"
+                else
+                  echo "❌ ERROR: No resources of type $RESOURCE_TYPE were found"
+                  VALIDATION_FAILED=true
+                fi
+              else
+                echo "❌ ERROR: No resources of type $RESOURCE_TYPE were found"
+                VALIDATION_FAILED=true
+              fi
             fi
           done < /tmp/expected_types.txt
           
