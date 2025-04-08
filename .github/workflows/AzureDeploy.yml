@@ -102,64 +102,81 @@ jobs:
       uses: azure/CLI@v1
       with:
         inlineScript: |
-          echo "Checking for resources in resource group ${{ env.RESOURCE_GROUP }}..."
-          
-          # Get all resources in the resource group with lowercase type for case-insensitive comparison
-          RESOURCES=$(az resource list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].{type:type, name:name, lowercaseType:lower(type)}" -o json)
+         echo "Checking for resources in resource group AzureDeployTest..."
+
+          # Get all resources in the resource group
+          RESOURCES=$(az resource list --resource-group AzureDeployTest --query "[].{type:type, name:name}" -o json)
           echo "Resources found in resource group:"
           echo "$RESOURCES" | jq
-          
-          # Create mapping dictionary of resource types with proper casing
-          echo "Creating case mapping for Azure resources..."
-          echo "$RESOURCES" | jq -r '.[] | .type' | sort | uniq > /tmp/actual_types.txt
-          
+
+          # Extract and save actual resource types
+          echo "Creating resource type list..."
+          echo "$RESOURCES" | jq -r '.[] | .type' > /tmp/actual_types.txt
+
           # Check for each resource type from the template
           VALIDATION_FAILED=false
-          
+
           # Expected resource types from the Bicep template
           cat << 'EXPECTED_TYPES' > /tmp/expected_types.txt
-          ${{ env.RESOURCE_TYPES }}
+          Microsoft.Communication/communicationServices
+          Microsoft.Communication/emailServices
+          Microsoft.Insights/actionGroups
+          Microsoft.Insights/components
+          Microsoft.Sql/servers
+          Microsoft.Storage/storageAccounts
+          Microsoft.Web/serverfarms
+          Microsoft.Web/sites
           EXPECTED_TYPES
-          
+
           while IFS= read -r RESOURCE_TYPE; do
             # Skip empty lines
             [ -z "$RESOURCE_TYPE" ] && continue
             
             echo "Checking for resource type: $RESOURCE_TYPE"
             
-            # Use case-insensitive matching for resource types
+            # Convert to lowercase for case-insensitive comparison
             RESOURCE_TYPE_LOWER=$(echo "$RESOURCE_TYPE" | tr '[:upper:]' '[:lower:]')
-            RESOURCE_COUNT=$(echo "$RESOURCES" | jq -r "[.[] | select(.lowercaseType == \"$RESOURCE_TYPE_LOWER\")] | length")
             
-            if [ "$RESOURCE_COUNT" -gt 0 ]; then
-              echo "✅ Found $RESOURCE_COUNT resources of type similar to $RESOURCE_TYPE"
-              # Show the actual resources found with their correct casing
-              echo "$RESOURCES" | jq -r ".[] | select(.lowercaseType == \"$RESOURCE_TYPE_LOWER\") | \"  - \(.name) (\(.type))\""
-            else
-              # Check for partial matches (e.g., "EmailServices" vs "EmailServices")
-              PARTIAL_MATCHES=$(echo "$RESOURCES" | jq -r "[.[] | select(.lowercaseType | contains(\"$(echo $RESOURCE_TYPE_LOWER | awk -F'/' '{print $NF}')\"))]")
-              PARTIAL_COUNT=$(echo "$PARTIAL_MATCHES" | jq -r '. | length')
-              
-              if [ "$PARTIAL_COUNT" -gt 0 ] && [ "$PARTIAL_COUNT" != "0" ]; then
-                echo "⚠️ Found $PARTIAL_COUNT resources with partial match to $RESOURCE_TYPE:"
-                echo "$PARTIAL_MATCHES" | jq -r '.[] | "  - \(.name) (\(.type))"'
-                # Consider these as valid matches if in the same provider namespace
-                RESOURCE_PROVIDER=$(echo "$RESOURCE_TYPE" | cut -d'/' -f1)
-                MATCHING_PROVIDER_RESOURCES=$(echo "$PARTIAL_MATCHES" | jq -r "[.[] | select(.type | startswith(\"$RESOURCE_PROVIDER/\"))] | length")
-                
-                if [ "$MATCHING_PROVIDER_RESOURCES" -gt 0 ]; then
-                  echo "✅ At least $MATCHING_PROVIDER_RESOURCES resources found with matching provider namespace"
-                else
-                  echo "❌ ERROR: No resources of type $RESOURCE_TYPE were found"
-                  VALIDATION_FAILED=true
-                fi
-              else
-                echo "❌ ERROR: No resources of type $RESOURCE_TYPE were found"
-                VALIDATION_FAILED=true
+            # Check for exact matches (case-insensitive)
+            EXACT_MATCH_COUNT=0
+            while IFS= read -r ACTUAL_TYPE; do
+              ACTUAL_TYPE_LOWER=$(echo "$ACTUAL_TYPE" | tr '[:upper:]' '[:lower:]')
+              if [ "$ACTUAL_TYPE_LOWER" = "$RESOURCE_TYPE_LOWER" ]; then
+                EXACT_MATCH_COUNT=$((EXACT_MATCH_COUNT + 1))
               fi
+            done < /tmp/actual_types.txt
+            
+            if [ "$EXACT_MATCH_COUNT" -gt 0 ]; then
+              echo "✅ Found $EXACT_MATCH_COUNT resources of type $RESOURCE_TYPE (case-insensitive match)"
+              continue
+            fi
+            
+            # If no exact match, try partial matching on the resource name part
+            RESOURCE_PROVIDER=$(echo "$RESOURCE_TYPE" | cut -d'/' -f1)
+            RESOURCE_NAME=$(echo "$RESOURCE_TYPE" | cut -d'/' -f2)
+            RESOURCE_NAME_LOWER=$(echo "$RESOURCE_NAME" | tr '[:upper:]' '[:lower:]')
+            
+            PARTIAL_MATCH_COUNT=0
+            while IFS= read -r ACTUAL_TYPE; do
+              ACTUAL_PROVIDER=$(echo "$ACTUAL_TYPE" | cut -d'/' -f1)
+              ACTUAL_NAME=$(echo "$ACTUAL_TYPE" | cut -d'/' -f2)
+              ACTUAL_NAME_LOWER=$(echo "$ACTUAL_NAME" | tr '[:upper:]' '[:lower:]')
+              
+              # Check if providers match and resource names are similar
+              if [ "$ACTUAL_PROVIDER" = "$RESOURCE_PROVIDER" ] && [[ "$ACTUAL_NAME_LOWER" == *"$RESOURCE_NAME_LOWER"* ]] || [[ "$RESOURCE_NAME_LOWER" == *"$ACTUAL_NAME_LOWER"* ]]; then
+                PARTIAL_MATCH_COUNT=$((PARTIAL_MATCH_COUNT + 1))
+                echo "  - Found similar resource: $ACTUAL_TYPE"
+              fi
+            done < /tmp/actual_types.txt
+            
+            if [ "$PARTIAL_MATCH_COUNT" -gt 0 ]; then
+              echo "✅ Found $PARTIAL_MATCH_COUNT resources similar to $RESOURCE_TYPE"
+            else
+              echo "❌ ERROR: No resources of type $RESOURCE_TYPE or similar were found"
+              VALIDATION_FAILED=true
             fi
           done < /tmp/expected_types.txt
-          
+
           if [ "$VALIDATION_FAILED" = true ]; then
             echo "Resource validation failed. Some expected resources were not found in the resource group."
             exit 1
