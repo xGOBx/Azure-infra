@@ -102,7 +102,7 @@ jobs:
       uses: azure/CLI@v1
       with:
         inlineScript: |
-         echo "Checking for resources in resource group AzureDeployTest..."
+          echo "Checking for resources in resource group AzureDeployTest..."
 
           # Get all resources in the resource group
           RESOURCES=$(az resource list --resource-group AzureDeployTest --query "[].{type:type, name:name}" -o json)
