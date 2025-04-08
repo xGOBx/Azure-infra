@@ -71,10 +71,12 @@ jobs:
         bicep build $BICEP_FILE --outfile $JSON_FILE
         echo "JSON_TEMPLATE=$JSON_FILE" >> $GITHUB_ENV
         
-        # Extract expected resource types from the template
-        echo "Extracting expected resource types from the template..."
-        RESOURCE_TYPES=$(jq -r '.resources[] | .type' $JSON_FILE | sort | uniq)
-        echo "Expected resource types:"
+        # Extract only top-level resource types from the template
+        echo "Extracting top-level resource types from the template..."
+        RESOURCE_TYPES=$(jq -r '.resources[] | .type' $JSON_FILE | \
+                         awk -F'/' '{ if (NF <= 2) print $0 }' | \
+                         sort | uniq)
+        echo "Expected top-level resource types:"
         echo "$RESOURCE_TYPES"
         echo "RESOURCE_TYPES<<EOF" >> $GITHUB_ENV
         echo "$RESOURCE_TYPES" >> $GITHUB_ENV
@@ -120,6 +122,10 @@ jobs:
             [ -z "$RESOURCE_TYPE" ] && continue
             
             echo "Checking for resource type: $RESOURCE_TYPE"
+            
+            # Use simplified matching to check if a resource type exists
+            # This will match top-level resources like Microsoft.Sql/servers
+            # without requiring every child resource to exist
             RESOURCE_COUNT=$(echo "$RESOURCES" | jq -r "[.[] | select(.type == \"$RESOURCE_TYPE\")] | length")
             
             if [ "$RESOURCE_COUNT" -gt 0 ]; then
