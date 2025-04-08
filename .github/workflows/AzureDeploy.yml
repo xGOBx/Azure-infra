@@ -1,0 +1,78 @@
+name: Deploy Azure Resources
+
+on:
+  push:
+    branches: [ AzureDeployResources ]
+  pull_request:
+    branches: [ AzureDeployResources ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      resourceGroupName:
+        description: 'Name of the resource group'
+        required: true
+        default: 'AzureDeployTest'
+      location:
+        description: 'Azure region to deploy resources'
+        required: true
+        default: 'eastus'
+      bicepFilePath:
+        description: 'Path to the Bicep file'
+        required: true
+        default: './deploy/template.bicep'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Set variables from workflow dispatch or defaults
+      id: set-vars
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "RESOURCE_GROUP=${{ github.event.inputs.resourceGroupName }}" >> $GITHUB_ENV
+          echo "LOCATION=${{ github.event.inputs.location }}" >> $GITHUB_ENV
+          echo "BICEP_FILE=${{ github.event.inputs.bicepFilePath }}" >> $GITHUB_ENV
+        else
+          echo "RESOURCE_GROUP=my-resource-group" >> $GITHUB_ENV
+          echo "LOCATION=eastus" >> $GITHUB_ENV
+          echo "BICEP_FILE=./deploy/main.bicep" >> $GITHUB_ENV
+        fi
+    
+    - name: Create Resource Group
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          echo "Creating resource group ${{ env.RESOURCE_GROUP }} in ${{ env.LOCATION }}"
+          az group create --name ${{ env.RESOURCE_GROUP }} --location ${{ env.LOCATION }}
+
+    - name: Install Bicep CLI
+      run: |
+        curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+        chmod +x ./bicep
+        sudo mv ./bicep /usr/local/bin/bicep
+        bicep --version
+
+    - name: Convert Bicep to JSON
+      id: convert-bicep
+      run: |
+        BICEP_FILE="${{ env.BICEP_FILE }}"
+        JSON_FILE="${BICEP_FILE%.bicep}.json"
+        echo "Converting Bicep file $BICEP_FILE to $JSON_FILE"
+        bicep build $BICEP_FILE --outfile $JSON_FILE
+        echo "JSON_TEMPLATE=$JSON_FILE" >> $GITHUB_ENV
+
+    - name: Deploy ARM Template
+      uses: azure/arm-deploy@v1
+      with:
+        resourceGroupName: ${{ env.RESOURCE_GROUP }}
+        template: ${{ env.JSON_TEMPLATE }}
+        failOnStdErr: false
