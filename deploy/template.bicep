@@ -1,11 +1,9 @@
 param servers_devxserverdb_name string = 'devxserverdbxx'
 param sites_DevExchangeClient_name string = 'DevExchangeClientxx'
 param sites_DevExchangeServer_name string = 'DevExchangeServerxx'
-param components_DevExchangeClient_name string = 'DevExchangeClient'
 param storageAccounts_devexchangevault_name string = 'devexchangevaultxx'
 param serverfarms_ASP_DevExchangeServerResourceGroup_a54c_name string = 'ASP-DevExchangeServerResourceGroup-a54c'
 param emailServices_DevExchangeEmailServiceSender_name string = 'DevExchangeEmailServiceSenderxx'
-param actionGroups_Application_Insights_Smart_Detection_name string = 'Application Insights Smart Detection'
 param CommunicationServices_DevExchangeEmailService_name string = 'DevExchangeEmailServicexx'
 
 @description('Enter the database Password')
@@ -14,7 +12,6 @@ param administratorLoginPassword string
 
 @description('Subscription ID for resources')
 param subscriptionId string = 'a14a797b-7111-4a43-a0e1-4158d93a478f'
-param workspaces_DefaultWorkspace_CCAN_externalid string = '/subscriptions/${subscriptionId}/resourceGroups/DefaultResourceGroup-CCAN/providers/Microsoft.OperationalInsights/workspaces/DefaultWorkspace-${subscriptionId}-CCAN'
 
 var storageBaseUrl = 'https://${storageAccounts_devexchangevault_name}.blob.core.windows.net'
 
@@ -26,52 +23,8 @@ resource emailServices_DevExchangeEmailServiceSender_name_resource 'Microsoft.Co
   }
 }
 
-resource actionGroups_Application_Insights_Smart_Detection_name_resource 'microsoft.insights/actionGroups@2024-10-01-preview' = {
-  name: actionGroups_Application_Insights_Smart_Detection_name
-  location: 'Global'
-  properties: {
-    groupShortName: 'SmartDetect'
-    enabled: true
-    emailReceivers: []
-    smsReceivers: []
-    webhookReceivers: []
-    eventHubReceivers: []
-    itsmReceivers: []
-    azureAppPushReceivers: []
-    automationRunbookReceivers: []
-    voiceReceivers: []
-    logicAppReceivers: []
-    azureFunctionReceivers: []
-    armRoleReceivers: [
-      {
-        name: 'Monitoring Contributor'
-        roleId: '749f88d5-cbae-40b8-bcfc-e573ddc772fa'
-        useCommonAlertSchema: true
-      }
-      {
-        name: 'Monitoring Reader'
-        roleId: '43d0d8ad-25c7-4714-9337-8ba259a9fe05'
-        useCommonAlertSchema: true
-      }
-    ]
-  }
-}
 
-resource components_DevExchangeClient_name_resource 'microsoft.insights/components@2020-02-02' = {
-  name: components_DevExchangeClient_name
-  location: 'canadacentral'
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-    Flow_Type: 'Redfield'
-    Request_Source: 'IbizaWebAppExtensionCreate'
-    RetentionInDays: 90
-    WorkspaceResourceId: workspaces_DefaultWorkspace_CCAN_externalid
-    IngestionMode: 'LogAnalytics'
-    publicNetworkAccessForIngestion: 'Enabled'
-    publicNetworkAccessForQuery: 'Enabled'
-  }
-}
+
 
 resource servers_devxserverdb_name_resource 'Microsoft.Sql/servers@2024-05-01-preview' = {
   name: servers_devxserverdb_name
@@ -175,278 +128,7 @@ resource emailServices_DevExchangeEmailServiceSender_name_AzureManagedDomain 'Mi
   }
 }
 
-resource components_DevExchangeClient_name_degradationindependencyduration 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'degradationindependencyduration'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'degradationindependencyduration'
-      DisplayName: 'Degradation in dependency duration'
-      Description: 'Smart Detection rules notify you of performance anomaly issues.'
-      HelpUrl: 'https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: false
-      SupportsEmailNotifications: true
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
 
-resource components_DevExchangeClient_name_degradationinserverresponsetime 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'degradationinserverresponsetime'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'degradationinserverresponsetime'
-      DisplayName: 'Degradation in server response time'
-      Description: 'Smart Detection rules notify you of performance anomaly issues.'
-      HelpUrl: 'https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: false
-      SupportsEmailNotifications: true
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_digestMailConfiguration 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'digestMailConfiguration'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'digestMailConfiguration'
-      DisplayName: 'Digest Mail Configuration'
-      Description: 'This rule describes the digest mail preferences'
-      HelpUrl: 'www.homail.com'
-      IsHidden: true
-      IsEnabledByDefault: true
-      IsInPreview: false
-      SupportsEmailNotifications: true
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_extension_billingdatavolumedailyspikeextension 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'extension_billingdatavolumedailyspikeextension'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'extension_billingdatavolumedailyspikeextension'
-      DisplayName: 'Abnormal rise in daily data volume (preview)'
-      Description: 'This detection rule automatically analyzes the billing data generated by your application, and can warn you about an unusual increase in your application\'s billing costs'
-      HelpUrl: 'https://github.com/Microsoft/ApplicationInsights-Home/tree/master/SmartDetection/billing-data-volume-daily-spike.md'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: true
-      SupportsEmailNotifications: false
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_extension_canaryextension 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'extension_canaryextension'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'extension_canaryextension'
-      DisplayName: 'Canary extension'
-      Description: 'Canary extension'
-      HelpUrl: 'https://github.com/Microsoft/ApplicationInsights-Home/blob/master/SmartDetection/'
-      IsHidden: true
-      IsEnabledByDefault: true
-      IsInPreview: true
-      SupportsEmailNotifications: false
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_extension_exceptionchangeextension 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'extension_exceptionchangeextension'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'extension_exceptionchangeextension'
-      DisplayName: 'Abnormal rise in exception volume (preview)'
-      Description: 'This detection rule automatically analyzes the exceptions thrown in your application, and can warn you about unusual patterns in your exception telemetry.'
-      HelpUrl: 'https://github.com/Microsoft/ApplicationInsights-Home/blob/master/SmartDetection/abnormal-rise-in-exception-volume.md'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: true
-      SupportsEmailNotifications: false
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_extension_memoryleakextension 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'extension_memoryleakextension'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'extension_memoryleakextension'
-      DisplayName: 'Potential memory leak detected (preview)'
-      Description: 'This detection rule automatically analyzes the memory consumption of each process in your application, and can warn you about potential memory leaks or increased memory consumption.'
-      HelpUrl: 'https://github.com/Microsoft/ApplicationInsights-Home/tree/master/SmartDetection/memory-leak.md'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: true
-      SupportsEmailNotifications: false
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_extension_securityextensionspackage 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'extension_securityextensionspackage'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'extension_securityextensionspackage'
-      DisplayName: 'Potential security issue detected (preview)'
-      Description: 'This detection rule automatically analyzes the telemetry generated by your application and detects potential security issues.'
-      HelpUrl: 'https://github.com/Microsoft/ApplicationInsights-Home/blob/master/SmartDetection/application-security-detection-pack.md'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: true
-      SupportsEmailNotifications: false
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_extension_traceseveritydetector 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'extension_traceseveritydetector'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'extension_traceseveritydetector'
-      DisplayName: 'Degradation in trace severity ratio (preview)'
-      Description: 'This detection rule automatically analyzes the trace logs emitted from your application, and can warn you about unusual patterns in the severity of your trace telemetry.'
-      HelpUrl: 'https://github.com/Microsoft/ApplicationInsights-Home/blob/master/SmartDetection/degradation-in-trace-severity-ratio.md'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: true
-      SupportsEmailNotifications: false
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_longdependencyduration 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'longdependencyduration'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'longdependencyduration'
-      DisplayName: 'Long dependency duration'
-      Description: 'Smart Detection rules notify you of performance anomaly issues.'
-      HelpUrl: 'https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: false
-      SupportsEmailNotifications: true
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_migrationToAlertRulesCompleted 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'migrationToAlertRulesCompleted'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'migrationToAlertRulesCompleted'
-      DisplayName: 'Migration To Alert Rules Completed'
-      Description: 'A configuration that controls the migration state of Smart Detection to Smart Alerts'
-      HelpUrl: 'https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics'
-      IsHidden: true
-      IsEnabledByDefault: false
-      IsInPreview: true
-      SupportsEmailNotifications: false
-    }
-    enabled: false
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_slowpageloadtime 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'slowpageloadtime'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'slowpageloadtime'
-      DisplayName: 'Slow page load time'
-      Description: 'Smart Detection rules notify you of performance anomaly issues.'
-      HelpUrl: 'https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: false
-      SupportsEmailNotifications: true
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
-
-resource components_DevExchangeClient_name_slowserverresponsetime 'microsoft.insights/components/ProactiveDetectionConfigs@2018-05-01-preview' = {
-  parent: components_DevExchangeClient_name_resource
-  name: 'slowserverresponsetime'
-  location: 'canadacentral'
-  properties: {
-    ruleDefinitions: {
-      Name: 'slowserverresponsetime'
-      DisplayName: 'Slow server response time'
-      Description: 'Smart Detection rules notify you of performance anomaly issues.'
-      HelpUrl: 'https://docs.microsoft.com/en-us/azure/application-insights/app-insights-proactive-performance-diagnostics'
-      IsHidden: false
-      IsEnabledByDefault: true
-      IsInPreview: false
-      SupportsEmailNotifications: true
-    }
-    enabled: true
-    sendEmailsToSubscriptionOwners: true
-    customEmails: []
-  }
-}
 
 resource servers_devxserverdb_name_Default 'Microsoft.Sql/servers/advancedThreatProtectionSettings@2024-05-01-preview' = {
   parent: servers_devxserverdb_name_resource
@@ -908,14 +590,7 @@ resource sites_DevExchangeClient_name_resource 'Microsoft.Web/sites@2024-04-01' 
   name: sites_DevExchangeClient_name
   location: 'Canada Central'
   tags: {
-    'hidden-link: /app-insights-resource-id': resourceId(
-      subscriptionId,
-      resourceGroup().name,
-      'microsoft.insights/components',
-      components_DevExchangeClient_name
-    )
-    'hidden-link: /app-insights-instrumentation-key': 'f23b64bd-629a-403c-8da9-04dc88f9b041'
-    'hidden-link: /app-insights-conn-string': 'InstrumentationKey=f23b64bd-629a-403c-8da9-04dc88f9b041;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=d3f0a92f-8742-4db4-a65c-800c23a3f46e'
+  
   }
   kind: 'app'
   properties: {
@@ -1085,9 +760,6 @@ resource sites_DevExchangeClient_name_ftp 'Microsoft.Web/sites/basicPublishingCr
   name: 'ftp'
   location: 'Canada Central'
   tags: {
-    'hidden-link: /app-insights-resource-id': '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup().name}/providers/microsoft.insights/components/${components_DevExchangeClient_name}'
-    'hidden-link: /app-insights-instrumentation-key': 'f23b64bd-629a-403c-8da9-04dc88f9b041'
-    'hidden-link: /app-insights-conn-string': 'InstrumentationKey=f23b64bd-629a-403c-8da9-04dc88f9b041;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=d3f0a92f-8742-4db4-a65c-800c23a3f46e'
   }
   properties: {
     allow: false
@@ -1111,9 +783,6 @@ resource sites_DevExchangeClient_name_scm 'Microsoft.Web/sites/basicPublishingCr
   name: 'scm'
   location: 'Canada Central'
   tags: {
-    'hidden-link: /app-insights-resource-id': '/subscriptions/${subscriptionId}/resourceGroups/${resourceGroup().name}/providers/microsoft.insights/components/${components_DevExchangeClient_name}'
-    'hidden-link: /app-insights-instrumentation-key': 'f23b64bd-629a-403c-8da9-04dc88f9b041'
-    'hidden-link: /app-insights-conn-string': 'InstrumentationKey=f23b64bd-629a-403c-8da9-04dc88f9b041;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=d3f0a92f-8742-4db4-a65c-800c23a3f46e'
   }
   properties: {
     allow: false
