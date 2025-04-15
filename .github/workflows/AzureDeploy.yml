@@ -2,9 +2,9 @@ name: Deploy Azure Resources
 
 on:
   push:
-    branches: [ AzureDeployResources ]
+    branches: [ AzureDeployResourcesTest  ]
   pull_request:
-    branches: [ AzureDeployResources ]
+    branches: [ AzureDeployResourcesTest  ]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
