@@ -2,9 +2,9 @@ name: Deploy Azure Resources
 
 on:
   push:
-    branches: [ AzureDeployResourcesTest  ]
+    branches: [ AzureDeployResourcesTest ]
   pull_request:
-    branches: [ AzureDeployResourcesTest  ]
+    branches: [ AzureDeployResourcesTest ]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
@@ -55,48 +55,47 @@ jobs:
           echo "Creating resource group ${{ env.RESOURCE_GROUP }} in ${{ env.LOCATION }}"
           az group create --name ${{ env.RESOURCE_GROUP }} --location ${{ env.LOCATION }}
 
-    - name: Install Bicep CLI
-      run: |
-        curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
-        chmod +x ./bicep
-        sudo mv ./bicep /usr/local/bin/bicep
-        bicep --version
-
-    - name: Extract Expected Resources
-      id: extract-resources
-      run: |
-        # Extract expected resource types directly from Bicep file
-        echo "Extracting expected resource types from Bicep file..."
-        
-        # Create a list of expected resource types
-        cat << 'EXPECTED_TYPES' > /tmp/expected_types.txt
-        Microsoft.Communication/communicationServices
-        Microsoft.Communication/emailServices
-        Microsoft.Sql/servers
-        Microsoft.Storage/storageAccounts
-        Microsoft.Web/serverfarms
-        Microsoft.Web/sites
-        EXPECTED_TYPES
-        
-        cat /tmp/expected_types.txt
-
-    - name: Deploy with Bicep
-      id: bicep-deploy
+    - name: Deploy Bicep File Directly
+      id: arm-deploy
       continue-on-error: true  # This ensures the workflow continues even if deployment "fails"
-      uses: azure/CLI@v1
+      uses: azure/arm-deploy@v1
       with:
-        inlineScript: |
-          echo "Deploying Bicep file ${{ env.BICEP_FILE }} to resource group ${{ env.RESOURCE_GROUP }}..."
-          az deployment group create \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --template-file ${{ env.BICEP_FILE }} \
-            --parameters administratorLoginPassword=${{ secrets.DB_ADMIN_PASSWORD }} \
-            --name 'github-action-deployment'
+        resourceGroupName: ${{ env.RESOURCE_GROUP }}
+        template: ${{ env.BICEP_FILE }}
+        parameters: administratorLoginPassword=${{ secrets.DB_ADMIN_PASSWORD }}
+        failOnStdErr: false
+        deploymentName: 'github-action-deployment'
 
     - name: Wait for Resources to Provision
       run: |
         echo "Waiting 60 seconds for resources to finish provisioning..."
         sleep 60
+
+    - name: Extract Expected Resources
+      id: extract-resources
+      run: |
+        # Install Bicep CLI
+        curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+        chmod +x ./bicep
+        sudo mv ./bicep /usr/local/bin/bicep
+        bicep --version
+        
+        # Generate JSON for analysis without deploying
+        BICEP_FILE="${{ env.BICEP_FILE }}"
+        JSON_FILE="${BICEP_FILE%.bicep}.json"
+        echo "Converting Bicep file $BICEP_FILE to $JSON_FILE for analysis only"
+        bicep build $BICEP_FILE --outfile $JSON_FILE
+        
+        # Extract only top-level resource types from the template
+        echo "Extracting top-level resource types from the template..."
+        RESOURCE_TYPES=$(jq -r '.resources[] | .type' $JSON_FILE | \
+                         awk -F'/' '{ if (NF <= 2) print $0 }' | \
+                         sort | uniq)
+        echo "Expected top-level resource types:"
+        echo "$RESOURCE_TYPES"
+        echo "RESOURCE_TYPES<<EOF" >> $GITHUB_ENV
+        echo "$RESOURCE_TYPES" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
 
     - name: Validate Required Resources
       uses: azure/CLI@v1
@@ -115,6 +114,18 @@ jobs:
 
           # Check for each resource type from the template
           VALIDATION_FAILED=false
+
+          # Expected resource types from the Bicep template
+          cat << 'EXPECTED_TYPES' > /tmp/expected_types.txt
+          Microsoft.Communication/communicationServices
+          Microsoft.Communication/emailServices
+          Microsoft.Insights/actionGroups
+          Microsoft.Insights/components
+          Microsoft.Sql/servers
+          Microsoft.Storage/storageAccounts
+          Microsoft.Web/serverfarms
+          Microsoft.Web/sites
+          EXPECTED_TYPES
 
           while IFS= read -r RESOURCE_TYPE; do
             # Skip empty lines
