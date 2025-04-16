@@ -4,7 +4,7 @@ name: Deploy Azure Resources
 env:
   # Default resource configuration (used when not triggered via workflow_dispatch)
   DEFAULT_RESOURCE_GROUP: "RealTest"
-  DEFAULT_LOCATION: "eastus"
+  DEFAULT_LOCATION: "canadacentral"
   DEFAULT_BICEP_FILE_PATH: "./deploy/template.bicep"
   
   # Expected resource types for validation
