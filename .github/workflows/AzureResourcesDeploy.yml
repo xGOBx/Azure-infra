@@ -17,10 +17,13 @@ env:
     Microsoft.Web/sites
 
 on:
+
+  workflow_dispatch:
+  
   pull_request:
     branches: [ AzureDeployResources ]
   # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+ 
     inputs:
       resourceGroupName:
         description: 'Name of the resource group'
