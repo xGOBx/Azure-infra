@@ -1,10 +1,10 @@
-param servers_devxserverdb_name string = 'devxserverdbxx'
-param sites_DevExchangeClient_name string = 'DevExchangeClientxx'
-param sites_DevExchangeServer_name string = 'DevExchangeServerxx'
-param storageAccounts_devexchangevault_name string = 'devexchangevaultxx'
+param servers_devxserverdb_name string = 'devxserverdbx'
+param sites_DevExchangeClient_name string = 'DevExchangeClientx'
+param sites_DevExchangeServer_name string = 'DevExchangeServerx'
+param storageAccounts_devexchangevault_name string = 'devexchangevaultx'
 param serverfarms_ASP_DevExchangeServerResourceGroup_a54c_name string = 'ASP-DevExchangeServerResourceGroup-a54c'
-param emailServices_DevExchangeEmailServiceSender_name string = 'DevExchangeEmailServiceSenderxx'
-param CommunicationServices_DevExchangeEmailService_name string = 'DevExchangeEmailServicexx'
+param emailServices_DevExchangeEmailServiceSender_name string = 'DevExchangeEmailServiceSenderx'
+param CommunicationServices_DevExchangeEmailService_name string = 'DevExchangeEmailServicex'
 
 @description('Enter the database Password')
 @secure()
