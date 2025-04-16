@@ -1,0 +1,1575 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.34.44.8038",
+      "templateHash": "10595606473461596221"
+    }
+  },
+  "parameters": {
+    "servers_devxserverdb_name": {
+      "type": "string",
+      "defaultValue": "devxserverdbx"
+    },
+    "sites_DevExchangeClient_name": {
+      "type": "string",
+      "defaultValue": "DevExchangeClientx"
+    },
+    "sites_DevExchangeServer_name": {
+      "type": "string",
+      "defaultValue": "DevExchangeServerx"
+    },
+    "storageAccounts_devexchangevault_name": {
+      "type": "string",
+      "defaultValue": "devexchangevaultx"
+    },
+    "serverfarms_ASP_DevExchangeServerResourceGroup_a54c_name": {
+      "type": "string",
+      "defaultValue": "ASP-DevExchangeServerResourceGroup-a54c"
+    },
+    "emailServices_DevExchangeEmailServiceSender_name": {
+      "type": "string",
+      "defaultValue": "DevExchangeEmailServiceSenderx"
+    },
+    "CommunicationServices_DevExchangeEmailService_name": {
+      "type": "string",
+      "defaultValue": "DevExchangeEmailServicex"
+    },
+    "administratorLoginPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Enter the database Password"
+      }
+    },
+    "subscriptionId": {
+      "type": "string",
+      "defaultValue": "a14a797b-7111-4a43-a0e1-4158d93a478f",
+      "metadata": {
+        "description": "Subscription ID for resources"
+      }
+    }
+  },
+  "variables": {
+    "storageBaseUrl": "[format('https://{0}.blob.core.windows.net', parameters('storageAccounts_devexchangevault_name'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Communication/emailServices",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[parameters('emailServices_DevExchangeEmailServiceSender_name')]",
+      "location": "global",
+      "properties": {
+        "dataLocation": "United States"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[parameters('servers_devxserverdb_name')]",
+      "location": "eastus2",
+      "kind": "v12.0",
+      "properties": {
+        "administratorLogin": "Invincible",
+        "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+        "version": "12.0",
+        "minimalTlsVersion": "None",
+        "publicNetworkAccess": "Enabled",
+        "restrictOutboundNetworkAccess": "Disabled"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('storageAccounts_devexchangevault_name')]",
+      "location": "canadacentral",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "dnsEndpointType": "Standard",
+        "defaultToOAuthAuthentication": false,
+        "publicNetworkAccess": "Enabled",
+        "allowCrossTenantReplication": false,
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "allowSharedKeyAccess": true,
+        "largeFileSharesState": "Enabled",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": true,
+        "encryption": {
+          "requireInfrastructureEncryption": false,
+          "services": {
+            "file": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "blob": {
+              "keyType": "Account",
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        },
+        "accessTier": "Hot"
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2024-04-01",
+      "name": "[parameters('serverfarms_ASP_DevExchangeServerResourceGroup_a54c_name')]",
+      "location": "Canada Central",
+      "sku": {
+        "name": "F1",
+        "tier": "Free",
+        "size": "F1",
+        "family": "F",
+        "capacity": 0
+      },
+      "kind": "app",
+      "properties": {
+        "perSiteScaling": false,
+        "elasticScaleEnabled": false,
+        "maximumElasticWorkerCount": 0,
+        "isSpot": false,
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0,
+        "zoneRedundant": false
+      }
+    },
+    {
+      "type": "Microsoft.Communication/communicationServices",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[parameters('CommunicationServices_DevExchangeEmailService_name')]",
+      "location": "global",
+      "properties": {
+        "dataLocation": "United States",
+        "linkedDomains": [
+          "[resourceId('Microsoft.Communication/emailServices/domains', parameters('emailServices_DevExchangeEmailServiceSender_name'), 'AzureManagedDomain')]"
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Communication/emailServices/domains', parameters('emailServices_DevExchangeEmailServiceSender_name'), 'AzureManagedDomain')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Communication/emailServices/domains",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[format('{0}/{1}', parameters('emailServices_DevExchangeEmailServiceSender_name'), 'AzureManagedDomain')]",
+      "location": "global",
+      "properties": {
+        "domainManagement": "AzureManaged",
+        "userEngagementTracking": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Communication/emailServices', parameters('emailServices_DevExchangeEmailServiceSender_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/advancedThreatProtectionSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'Default')]",
+      "properties": {
+        "state": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'CreateIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'DbParameterization')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'DefragmentIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'DropIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'ForceLastGoodPlan')]",
+      "properties": {
+        "autoExecuteValue": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/auditingPolicies",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'Default')]",
+      "location": "East US 2",
+      "properties": {
+        "auditingState": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/auditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'default')]",
+      "properties": {
+        "retentionDays": 0,
+        "auditActionsAndGroups": [],
+        "isStorageSecondaryKeyInUse": false,
+        "isAzureMonitorTargetEnabled": false,
+        "isManagedIdentityInUse": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/connectionPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'default')]",
+      "location": "eastus2",
+      "properties": {
+        "connectionType": "Default"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+      "location": "eastus2",
+      "sku": {
+        "name": "Standard",
+        "tier": "Standard",
+        "capacity": 10
+      },
+      "kind": "v12.0,user",
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 1073741824,
+        "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+        "zoneRedundant": false,
+        "readScale": "Disabled",
+        "requestedBackupStorageRedundancy": "Geo",
+        "maintenanceConfigurationId": "[format('/subscriptions/{0}/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/SQL_Default', parameters('subscriptionId'))]",
+        "isLedgerOn": false,
+        "availabilityZone": "NoPreference"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+      "location": "eastus2",
+      "sku": {
+        "name": "Basic",
+        "tier": "Basic",
+        "capacity": 5
+      },
+      "kind": "v12.0,user",
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 2147483648,
+        "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+        "zoneRedundant": false,
+        "readScale": "Disabled",
+        "requestedBackupStorageRedundancy": "Geo",
+        "maintenanceConfigurationId": "[format('/subscriptions/{0}/providers/Microsoft.Maintenance/publicMaintenanceConfigurations/SQL_Default', parameters('subscriptionId'))]",
+        "isLedgerOn": false,
+        "availabilityZone": "NoPreference"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advancedThreatProtectionSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/master/Default', parameters('servers_devxserverdb_name'))]",
+      "properties": {
+        "state": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/auditingPolicies",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/master/Default', parameters('servers_devxserverdb_name'))]",
+      "location": "East US 2",
+      "properties": {
+        "auditingState": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/auditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/master/Default', parameters('servers_devxserverdb_name'))]",
+      "properties": {
+        "retentionDays": 0,
+        "isAzureMonitorTargetEnabled": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/extendedAuditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/master/Default', parameters('servers_devxserverdb_name'))]",
+      "properties": {
+        "retentionDays": 0,
+        "isAzureMonitorTargetEnabled": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/geoBackupPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/master/Default', parameters('servers_devxserverdb_name'))]",
+      "properties": {
+        "state": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/ledgerDigestUploads",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/master/Current', parameters('servers_devxserverdb_name'))]",
+      "properties": {},
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/securityAlertPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/master/Default', parameters('servers_devxserverdb_name'))]",
+      "properties": {
+        "state": "Disabled",
+        "disabledAlerts": [
+          ""
+        ],
+        "emailAddresses": [
+          ""
+        ],
+        "emailAccountAdmins": false,
+        "retentionDays": 0
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/master/Current', parameters('servers_devxserverdb_name'))]",
+      "properties": {
+        "state": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/vulnerabilityAssessments",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/master/Default', parameters('servers_devxserverdb_name'))]",
+      "properties": {
+        "recurringScans": {
+          "isEnabled": false,
+          "emailSubscriptionAdmins": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/devOpsAuditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'Default')]",
+      "properties": {
+        "isAzureMonitorTargetEnabled": false,
+        "isManagedIdentityInUse": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/encryptionProtector",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'current')]",
+      "kind": "servicemanaged",
+      "properties": {
+        "serverKeyName": "ServiceManaged",
+        "serverKeyType": "ServiceManaged",
+        "autoRotationEnabled": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/extendedAuditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'default')]",
+      "properties": {
+        "retentionDays": 0,
+        "auditActionsAndGroups": [],
+        "isStorageSecondaryKeyInUse": false,
+        "isAzureMonitorTargetEnabled": false,
+        "isManagedIdentityInUse": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'AllowAllAzureIPs')]",
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'ClientIPAddress_2025-02-09_08:43:48')]",
+      "properties": {
+        "startIpAddress": "104.222.17.242",
+        "endIpAddress": "104.222.17.242"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'ClientIPAddress_2025-02-11_04:53:07')]",
+      "properties": {
+        "startIpAddress": "160.10.198.137",
+        "endIpAddress": "160.10.198.137"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'ClientIPAddress_2025-02-25_03:19:56')]",
+      "properties": {
+        "startIpAddress": "160.10.196.12",
+        "endIpAddress": "160.10.196.12"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'ClientIPAddress_2025-02-27_04:37:02')]",
+      "properties": {
+        "startIpAddress": "160.10.199.212",
+        "endIpAddress": "160.10.199.212"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'query-editor-16541e')]",
+      "properties": {
+        "startIpAddress": "160.10.197.99",
+        "endIpAddress": "160.10.197.99"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'query-editor-211f79')]",
+      "properties": {
+        "startIpAddress": "160.10.198.188",
+        "endIpAddress": "160.10.198.188"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'query-editor-7eb1c1')]",
+      "properties": {
+        "startIpAddress": "160.10.197.93",
+        "endIpAddress": "160.10.197.93"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'query-editor-9f18ff')]",
+      "properties": {
+        "startIpAddress": "160.10.197.166",
+        "endIpAddress": "160.10.197.166"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'query-editor-d3815f')]",
+      "properties": {
+        "startIpAddress": "160.10.199.188",
+        "endIpAddress": "160.10.199.188"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'query-editor-e01e75')]",
+      "properties": {
+        "startIpAddress": "160.10.196.43",
+        "endIpAddress": "160.10.196.43"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/keys",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'ServiceManaged')]",
+      "kind": "servicemanaged",
+      "properties": {
+        "serverKeyType": "ServiceManaged"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/securityAlertPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('servers_devxserverdb_name'), 'Default')]",
+      "properties": {
+        "state": "Disabled",
+        "disabledAlerts": [
+          ""
+        ],
+        "emailAddresses": [
+          ""
+        ],
+        "emailAccountAdmins": false,
+        "retentionDays": 0
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', parameters('storageAccounts_devexchangevault_name'), 'default')]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "properties": {
+        "containerDeleteRetentionPolicy": {
+          "enabled": true,
+          "days": 7
+        },
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "allowPermanentDelete": false,
+          "enabled": true,
+          "days": 7
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/fileServices",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', parameters('storageAccounts_devexchangevault_name'), 'default')]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "properties": {
+        "protocolSettings": {
+          "smb": {}
+        },
+        "cors": {
+          "corsRules": []
+        },
+        "shareDeleteRetentionPolicy": {
+          "enabled": true,
+          "days": 7
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/queueServices",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', parameters('storageAccounts_devexchangevault_name'), 'default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/tableServices",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}', parameters('storageAccounts_devexchangevault_name'), 'default')]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2024-04-01",
+      "name": "[parameters('sites_DevExchangeClient_name')]",
+      "location": "Canada Central",
+      "tags": {},
+      "kind": "app",
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[format('{0}.azurewebsites.net', parameters('sites_DevExchangeClient_name'))]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[format('{0}.scm.azurewebsites.net', parameters('sites_DevExchangeClient_name'))]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_DevExchangeServerResourceGroup_a54c_name'))]",
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "dnsConfiguration": {},
+        "vnetRouteAllEnabled": false,
+        "vnetImagePullEnabled": false,
+        "vnetContentShareEnabled": false,
+        "siteConfig": {
+          "numberOfWorkers": 1,
+          "acrUseManagedIdentityCreds": false,
+          "alwaysOn": false,
+          "http20Enabled": false,
+          "functionAppScaleLimit": 0,
+          "minimumElasticInstanceCount": 0
+        },
+        "scmSiteAlsoStopped": false,
+        "clientAffinityEnabled": true,
+        "clientCertEnabled": false,
+        "clientCertMode": "Required",
+        "hostNamesDisabled": false,
+        "ipMode": "IPv4",
+        "vnetBackupRestoreEnabled": false,
+        "customDomainVerificationId": "C4AAAF9A4418B7F1CEC0DE0F9C0CD1C4904936C55D5C70C87A320F97D2A72F04",
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": true,
+        "endToEndEncryptionEnabled": false,
+        "redundancyMode": "None",
+        "publicNetworkAccess": "Enabled",
+        "storageAccountRequired": false,
+        "keyVaultReferenceIdentity": "SystemAssigned",
+        "autoGeneratedDomainNameLabelScope": "TenantReuse"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_DevExchangeServerResourceGroup_a54c_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2024-04-01",
+      "name": "[parameters('sites_DevExchangeServer_name')]",
+      "location": "Canada Central",
+      "tags": {
+        "[format('hidden-related:/subscriptions/{0}/resourceGroups/DevExchangeServerResourceGroup/providers/Microsoft.Web/serverFarms/ASP-DevExchangeServerResourceGroup-a54c', parameters('subscriptionId'))]": "empty"
+      },
+      "kind": "app",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[format('{0}.azurewebsites.net', parameters('sites_DevExchangeServer_name'))]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[format('{0}.scm.azurewebsites.net', parameters('sites_DevExchangeServer_name'))]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_DevExchangeServerResourceGroup_a54c_name'))]",
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "dnsConfiguration": {},
+        "vnetRouteAllEnabled": false,
+        "vnetImagePullEnabled": false,
+        "vnetContentShareEnabled": false,
+        "siteConfig": {
+          "numberOfWorkers": 1,
+          "acrUseManagedIdentityCreds": false,
+          "alwaysOn": false,
+          "http20Enabled": false,
+          "functionAppScaleLimit": 0,
+          "minimumElasticInstanceCount": 1,
+          "connectionStrings": [
+            {
+              "name": "DefaultConnection",
+              "connectionString": "[format('Data Source={0}.database.windows.net,1433;Initial Catalog=DevExchangeDatabase;User ID=Invincible;Password={1}', parameters('servers_devxserverdb_name'), parameters('administratorLoginPassword'))]",
+              "type": "SQLAzure"
+            }
+          ],
+          "appSettings": [
+            {
+              "name": "AzureCommunicationServices__ConnectionString",
+              "value": "[format('endpoint=https://{0}.unitedstates.communication.azure.com/;accesskey={1}', parameters('CommunicationServices_DevExchangeEmailService_name'), listKeys(resourceId('Microsoft.Communication/communicationServices', parameters('CommunicationServices_DevExchangeEmailService_name')), '2023-06-01-preview').primaryKey)]",
+              "slotSetting": true
+            },
+            {
+              "name": "AzureCommunicationServices__SenderEmail",
+              "value": "[format('donotreply@{0}', reference(resourceId('Microsoft.Communication/emailServices/domains', parameters('emailServices_DevExchangeEmailServiceSender_name'), 'AzureManagedDomain'), '2023-06-01-preview').mailFromSenderDomain)]",
+              "slotSetting": true
+            },
+            {
+              "name": "AzureStorage__AccountKey",
+              "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name')), '2023-05-01').keys[0].value]",
+              "slotSetting": true
+            },
+            {
+              "name": "AzureStorage__AccountName",
+              "value": "[parameters('storageAccounts_devexchangevault_name')]",
+              "slotSetting": true
+            },
+            {
+              "name": "AzureStorage__BaseUrl",
+              "value": "[variables('storageBaseUrl')]",
+              "slotSetting": true
+            },
+            {
+              "name": "AzureStorage__ConnectionString",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', parameters('storageAccounts_devexchangevault_name'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name')), '2023-05-01').keys[0].value)]",
+              "slotSetting": true
+            },
+            {
+              "name": "Cors:ProductionOrigins",
+              "value": "[format('[\"https://{0}.azurewebsites.net\",\"https://{1}\",\"{2}\"]', toLower(parameters('sites_DevExchangeServer_name')), reference(resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeClient_name')), '2024-04-01').defaultHostName, variables('storageBaseUrl'))]",
+              "slotSetting": true
+            },
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "6.9.1",
+              "slotSetting": false
+            },
+            {
+              "name": "WEB_URL",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeClient_name')), '2024-04-01').defaultHostName)]",
+              "slotSetting": true
+            }
+          ]
+        },
+        "scmSiteAlsoStopped": false,
+        "clientAffinityEnabled": true,
+        "clientCertEnabled": false,
+        "clientCertMode": "Required",
+        "hostNamesDisabled": false,
+        "ipMode": "IPv4",
+        "vnetBackupRestoreEnabled": false,
+        "customDomainVerificationId": "C4AAAF9A4418B7F1CEC0DE0F9C0CD1C4904936C55D5C70C87A320F97D2A72F04",
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": true,
+        "endToEndEncryptionEnabled": false,
+        "redundancyMode": "None",
+        "storageAccountRequired": false,
+        "keyVaultReferenceIdentity": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Communication/communicationServices', parameters('CommunicationServices_DevExchangeEmailService_name'))]",
+        "[resourceId('Microsoft.Communication/emailServices/domains', parameters('emailServices_DevExchangeEmailServiceSender_name'), 'AzureManagedDomain')]",
+        "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarms_ASP_DevExchangeServerResourceGroup_a54c_name'))]",
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeClient_name'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2024-04-01",
+      "name": "[format('{0}/{1}', parameters('sites_DevExchangeClient_name'), 'ftp')]",
+      "location": "Canada Central",
+      "tags": {},
+      "properties": {
+        "allow": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeClient_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2024-04-01",
+      "name": "[format('{0}/{1}', parameters('sites_DevExchangeServer_name'), 'ftp')]",
+      "location": "Canada Central",
+      "tags": {
+        "[format('hidden-related:/subscriptions/{0}/resourceGroups/DevExchangeServerResourceGroup/providers/Microsoft.Web/serverFarms/ASP-DevExchangeServerResourceGroup-a54c', parameters('subscriptionId'))]": "empty"
+      },
+      "properties": {
+        "allow": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeServer_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2024-04-01",
+      "name": "[format('{0}/{1}', parameters('sites_DevExchangeClient_name'), 'scm')]",
+      "location": "Canada Central",
+      "tags": {},
+      "properties": {
+        "allow": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeClient_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/basicPublishingCredentialsPolicies",
+      "apiVersion": "2024-04-01",
+      "name": "[format('{0}/{1}', parameters('sites_DevExchangeServer_name'), 'scm')]",
+      "location": "Canada Central",
+      "tags": {
+        "[format('hidden-related:/subscriptions/{0}/resourceGroups/DevExchangeServerResourceGroup/providers/Microsoft.Web/serverFarms/ASP-DevExchangeServerResourceGroup-a54c', parameters('subscriptionId'))]": "empty"
+      },
+      "properties": {
+        "allow": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeServer_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2024-04-01",
+      "name": "[format('{0}/{1}', parameters('sites_DevExchangeServer_name'), 'web')]",
+      "location": "Canada Central",
+      "tags": {
+        "[format('hidden-related:/subscriptions/{0}/resourceGroups/DevExchangeServerResourceGroup/providers/Microsoft.Web/serverFarms/ASP-DevExchangeServerResourceGroup-a54c', parameters('subscriptionId'))]": "empty"
+      },
+      "properties": {
+        "numberOfWorkers": 1,
+        "defaultDocuments": [
+          "Default.htm",
+          "Default.html",
+          "Default.asp",
+          "index.htm",
+          "index.html",
+          "iisstart.htm",
+          "default.aspx",
+          "index.php",
+          "hostingstart.html"
+        ],
+        "netFrameworkVersion": "v6.0",
+        "phpVersion": "5.6",
+        "requestTracingEnabled": false,
+        "remoteDebuggingEnabled": false,
+        "remoteDebuggingVersion": "VS2022",
+        "httpLoggingEnabled": false,
+        "acrUseManagedIdentityCreds": false,
+        "logsDirectorySizeLimit": 35,
+        "detailedErrorLoggingEnabled": false,
+        "publishingUsername": "$DevExchangeServer",
+        "scmType": "None",
+        "use32BitWorkerProcess": true,
+        "webSocketsEnabled": false,
+        "alwaysOn": false,
+        "managedPipelineMode": "Integrated",
+        "virtualApplications": [
+          {
+            "virtualPath": "/",
+            "physicalPath": "site\\wwwroot",
+            "preloadEnabled": false
+          }
+        ],
+        "loadBalancing": "LeastRequests",
+        "experiments": {
+          "rampUpRules": []
+        },
+        "autoHealEnabled": false,
+        "vnetRouteAllEnabled": false,
+        "vnetPrivatePortsCount": 0,
+        "cors": {
+          "allowedOrigins": [
+            "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeClient_name')), '2024-04-01').defaultHostName)]"
+          ],
+          "supportCredentials": true
+        },
+        "localMySqlEnabled": false,
+        "managedServiceIdentityId": 79235,
+        "ipSecurityRestrictions": [
+          {
+            "ipAddress": "Any",
+            "action": "Allow",
+            "priority": 2147483647,
+            "name": "Allow all",
+            "description": "Allow all access"
+          }
+        ],
+        "scmIpSecurityRestrictions": [
+          {
+            "ipAddress": "Any",
+            "action": "Allow",
+            "priority": 2147483647,
+            "name": "Allow all",
+            "description": "Allow all access"
+          }
+        ],
+        "scmIpSecurityRestrictionsUseMain": false,
+        "http20Enabled": false,
+        "minTlsVersion": "1.2",
+        "scmMinTlsVersion": "1.2",
+        "ftpsState": "FtpsOnly",
+        "preWarmedInstanceCount": 0,
+        "elasticWebAppScaleLimit": 0,
+        "functionsRuntimeScaleMonitoringEnabled": false,
+        "minimumElasticInstanceCount": 1,
+        "azureStorageAccounts": {}
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeClient_name'))]",
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeServer_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/hostNameBindings",
+      "apiVersion": "2024-04-01",
+      "name": "[format('{0}/{1}', parameters('sites_DevExchangeServer_name'), format('{0}.azurewebsites.net', parameters('sites_DevExchangeServer_name')))]",
+      "location": "Canada Central",
+      "properties": {
+        "siteName": "[parameters('sites_DevExchangeServer_name')]",
+        "hostNameType": "Verified"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeServer_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/siteextensions",
+      "apiVersion": "2024-04-01",
+      "name": "[format('{0}/{1}', parameters('sites_DevExchangeServer_name'), 'Microsoft.AspNetCore.AzureAppServices.SiteExtension')]",
+      "location": "Canada Central",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('sites_DevExchangeServer_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Communication/emailServices/domains/senderUsernames",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[format('{0}/azuremanageddomain/donotreply', parameters('emailServices_DevExchangeEmailServiceSender_name'))]",
+      "properties": {
+        "username": "DoNotReply",
+        "displayName": "DoNotReply"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Communication/emailServices/domains', parameters('emailServices_DevExchangeEmailServiceSender_name'), 'AzureManagedDomain')]",
+        "[resourceId('Microsoft.Communication/emailServices', parameters('emailServices_DevExchangeEmailServiceSender_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advancedThreatProtectionSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'Default')]",
+      "properties": {
+        "state": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advancedThreatProtectionSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'Default')]",
+      "properties": {
+        "state": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'CreateIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'CreateIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'DbParameterization')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'DbParameterization')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'DefragmentIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'DefragmentIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'DropIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'DropIndex')]",
+      "properties": {
+        "autoExecuteValue": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'ForceLastGoodPlan')]",
+      "properties": {
+        "autoExecuteValue": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/advisors",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'ForceLastGoodPlan')]",
+      "properties": {
+        "autoExecuteValue": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/auditingPolicies",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'Default')]",
+      "location": "East US 2",
+      "properties": {
+        "auditingState": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/auditingPolicies",
+      "apiVersion": "2014-04-01",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'Default')]",
+      "location": "East US 2",
+      "properties": {
+        "auditingState": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/auditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'default')]",
+      "properties": {
+        "retentionDays": 0,
+        "isAzureMonitorTargetEnabled": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/auditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'default')]",
+      "properties": {
+        "retentionDays": 0,
+        "isAzureMonitorTargetEnabled": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/backupLongTermRetentionPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'default')]",
+      "properties": {
+        "weeklyRetention": "PT0S",
+        "monthlyRetention": "PT0S",
+        "yearlyRetention": "PT0S",
+        "weekOfYear": 0
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/backupLongTermRetentionPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'default')]",
+      "properties": {
+        "weeklyRetention": "PT0S",
+        "monthlyRetention": "PT0S",
+        "yearlyRetention": "PT0S",
+        "weekOfYear": 0
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/backupShortTermRetentionPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'default')]",
+      "properties": {
+        "retentionDays": 7,
+        "diffBackupIntervalInHours": 24
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/backupShortTermRetentionPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'default')]",
+      "properties": {
+        "retentionDays": 7,
+        "diffBackupIntervalInHours": 24
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/extendedAuditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'default')]",
+      "properties": {
+        "retentionDays": 0,
+        "isAzureMonitorTargetEnabled": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/extendedAuditingSettings",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'default')]",
+      "properties": {
+        "retentionDays": 0,
+        "isAzureMonitorTargetEnabled": false,
+        "state": "Disabled",
+        "storageAccountSubscriptionId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/geoBackupPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'Default')]",
+      "properties": {
+        "state": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/geoBackupPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'Default')]",
+      "properties": {
+        "state": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/ledgerDigestUploads",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'Current')]",
+      "properties": {},
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/ledgerDigestUploads",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'Current')]",
+      "properties": {},
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/securityAlertPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'Default')]",
+      "properties": {
+        "state": "Disabled",
+        "disabledAlerts": [
+          ""
+        ],
+        "emailAddresses": [
+          ""
+        ],
+        "emailAccountAdmins": false,
+        "retentionDays": 0
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/securityAlertPolicies",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'Default')]",
+      "properties": {
+        "state": "Disabled",
+        "disabledAlerts": [
+          ""
+        ],
+        "emailAddresses": [
+          ""
+        ],
+        "emailAccountAdmins": false,
+        "retentionDays": 0
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'Current')]",
+      "properties": {
+        "state": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'Current')]",
+      "properties": {
+        "state": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/vulnerabilityAssessments",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db', 'Default')]",
+      "properties": {
+        "recurringScans": {
+          "isEnabled": false,
+          "emailSubscriptionAdmins": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchange.Server_db')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases/vulnerabilityAssessments",
+      "apiVersion": "2024-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase', 'Default')]",
+      "properties": {
+        "recurringScans": {
+          "isEnabled": false,
+          "emailSubscriptionAdmins": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers/databases', parameters('servers_devxserverdb_name'), 'DevExchangeDatabase')]",
+        "[resourceId('Microsoft.Sql/servers', parameters('servers_devxserverdb_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccounts_devexchangevault_name'), 'default', 'cats')]",
+      "properties": {
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_devexchangevault_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccounts_devexchangevault_name'), 'default', 'toads')]",
+      "properties": {
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_devexchangevault_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/{1}/{2}', parameters('storageAccounts_devexchangevault_name'), 'default', 'website-banners')]",
+      "properties": {
+        "immutableStorageWithVersioning": {
+          "enabled": false
+        },
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccounts_devexchangevault_name'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccounts_devexchangevault_name'))]"
+      ]
+    }
+  ]
+}

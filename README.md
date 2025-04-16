@@ -1,5 +1,7 @@
 # Azure Resources Deployment Workflow
 
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FxGOBx%2FAzure-infra%2FAzureDeployResources%2Fdeploy%2Ftemplate.json)
+
 This GitHub Actions workflow automates the deployment of Azure resources using Bicep templates. It creates a resource group and deploys various Azure services as defined in your Bicep template.
 
 ## What This Workflow Does
