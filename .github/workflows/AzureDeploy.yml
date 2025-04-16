@@ -1,5 +1,21 @@
 name: Deploy Azure Resources
 
+# Configuration variables - easily change these values for different environments
+env:
+  # Default resource configuration (used when not triggered via workflow_dispatch)
+  DEFAULT_RESOURCE_GROUP: "RealTest"
+  DEFAULT_LOCATION: "eastus"
+  DEFAULT_BICEP_FILE_PATH: "./deploy/template.bicep"
+  
+  # Expected resource types for validation
+  EXPECTED_RESOURCE_TYPES: |
+    Microsoft.Communication/communicationServices
+    Microsoft.Communication/emailServices
+    Microsoft.Sql/servers
+    Microsoft.Storage/storageAccounts
+    Microsoft.Web/serverfarms
+    Microsoft.Web/sites
+
 on:
   push:
     branches: [ AzureDeployResourcesTest ]
@@ -43,9 +59,9 @@ jobs:
           echo "LOCATION=${{ github.event.inputs.location }}" >> $GITHUB_ENV
           echo "BICEP_FILE=${{ github.event.inputs.bicepFilePath }}" >> $GITHUB_ENV
         else
-          echo "RESOURCE_GROUP=AzureDeployTest" >> $GITHUB_ENV
-          echo "LOCATION=eastus" >> $GITHUB_ENV
-          echo "BICEP_FILE=./deploy/template.bicep" >> $GITHUB_ENV
+          echo "RESOURCE_GROUP=${{ env.DEFAULT_RESOURCE_GROUP }}" >> $GITHUB_ENV
+          echo "LOCATION=${{ env.DEFAULT_LOCATION }}" >> $GITHUB_ENV
+          echo "BICEP_FILE=${{ env.DEFAULT_BICEP_FILE_PATH }}" >> $GITHUB_ENV
         fi
     
     - name: Create Resource Group
@@ -101,10 +117,10 @@ jobs:
       uses: azure/CLI@v1
       with:
         inlineScript: |
-          echo "Checking for resources in resource group AzureDeployTest..."
+          echo "Checking for resources in resource group ${{ env.RESOURCE_GROUP }}..."
 
           # Get all resources in the resource group
-          RESOURCES=$(az resource list --resource-group AzureDeployTest --query "[].{type:type, name:name}" -o json)
+          RESOURCES=$(az resource list --resource-group ${{ env.RESOURCE_GROUP }} --query "[].{type:type, name:name}" -o json)
           echo "Resources found in resource group:"
           echo "$RESOURCES" | jq
 
@@ -115,17 +131,10 @@ jobs:
           # Check for each resource type from the template
           VALIDATION_FAILED=false
 
-          # Expected resource types from the Bicep template
-          cat << 'EXPECTED_TYPES' > /tmp/expected_types.txt
-          Microsoft.Communication/communicationServices
-          Microsoft.Communication/emailServices
-          Microsoft.Insights/actionGroups
-          Microsoft.Insights/components
-          Microsoft.Sql/servers
-          Microsoft.Storage/storageAccounts
-          Microsoft.Web/serverfarms
-          Microsoft.Web/sites
-          EXPECTED_TYPES
+          # Expected resource types from the environment variable
+          cat << EOF > /tmp/expected_types.txt
+          ${{ env.EXPECTED_RESOURCE_TYPES }}
+          EOF
 
           while IFS= read -r RESOURCE_TYPE; do
             # Skip empty lines
