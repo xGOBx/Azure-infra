@@ -5,8 +5,7 @@ This GitHub Actions workflow automates the deployment of Azure resources using B
 ## What This Workflow Does
 
 1. Triggers on:
-   * Push to `AzureDeployResourcesTest` branch
-   * Pull requests to `AzureDeployResourcesTest` branch
+   * Pull requests to `AzureDeployResources` branch
    * Manual runs (workflow_dispatch)
 
 2. Main Functions:

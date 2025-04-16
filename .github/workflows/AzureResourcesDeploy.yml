@@ -17,8 +17,6 @@ env:
     Microsoft.Web/sites
 
 on:
-  push:
-    branches: [ AzureDeployResources ]
   pull_request:
     branches: [ AzureDeployResources ]
   # Allows you to run this workflow manually from the Actions tab
