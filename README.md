@@ -33,7 +33,7 @@ You need to configure these secrets in your GitHub repository environment:
 ### 1. AZURE_CREDENTIALS_DEPLOY
 
 This should be a JSON object containing Azure service principal credentials. Generate it using Azure CLI:
- (you may need to make this command one line in order for it to run properly)
+ - Note : you may need to make this command one line in order for it to run properly
 
 ```bash
 az ad sp create-for-rbac --name "github-action-resouces-deployment" \
