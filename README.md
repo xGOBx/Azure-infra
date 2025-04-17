@@ -82,7 +82,7 @@ This is the password you want to set for your SQL database administrator account
 
 ### Automated Deployment
 
-When you push to or create a pull request against the `AzureDeployResourcesTest` branch, the workflow uses these default settings:
+When you push to or create a pull request against the `AzureDeployResources` branch, the workflow uses these default settings:
 * Resource Group: `RealTest`
 * Location: `canadacentral`
 * Bicep File: `./deploy/template.bicep`
