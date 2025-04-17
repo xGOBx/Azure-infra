@@ -4,6 +4,17 @@
 
 This GitHub Actions workflow automates the deployment of Azure resources using Bicep templates. It creates a resource group and deploys various Azure services as defined in your Bicep template.
 
+
+## Deployment Options
+
+### Option 1: One-Click Deployment (Public Repository Only)
+Click the "Deploy to Azure" button above to deploy directly from the template to your Azure account. This button provides a convenient way for users to deploy the template with custom parameter values through the Azure portal interface.
+
+**Note:** This option only works if the repository is public. The button relies on accessing the JSON template file directly from GitHub, which requires public access.
+
+### Option 2: Manual Deployment (Works with Private Repositories)
+If you've kept this repository private, follow the standard deployment instructions below to deploy the Bicep template directly.
+
 ## What This Workflow Does
 
 1. Triggers on:
